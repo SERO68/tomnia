@@ -3,7 +3,9 @@
 import 'dart:convert';
 import 'package:chatview/chatview.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:tomnia/classes.dart';
+import 'package:tomnia/model.dart';
 import 'data.dart';
 import 'theme.dart';
 
@@ -15,8 +17,6 @@ class Chat extends StatefulWidget {
 }
 
 class _ChatState extends State<Chat> {
-  final MessageService messageService =
-      MessageService('https://localhost:7174/api');
   List<Message> messages = [];
   AppTheme theme = LightTheme();
   final currentUser = ChatUser(
@@ -24,118 +24,162 @@ class _ChatState extends State<Chat> {
     name: 'Flutter',
     profilePhoto: Data.profileImage,
   );
-  final _chatController = ChatController(
-    initialMessageList: [],
-    scrollController: ScrollController(),
-    chatUsers: [
-      ChatUser(
-          id: '922a195f-918c-4174-b187-9d11fe552919',
-          name: 'Simform',
-          profilePhoto: Data.profileImage),
-    ],
-  );
 
+  late final ChatController _chatController;
+
+  String? receiverId = '1b660aee-0b2a-4c54-8df8-23e82c9f277b';
+  String? userId;
+
+  final String token =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJzZXJvYWxleEB5YWhvby5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjFiNjYwYWVlLTBiMmEtNGM1NC04ZGY4LTIzZTgyYzlmMjc3YiIsImp0aSI6ImViNTZkNjc4LTA0ZGItNDUyYS1iYjhkLTYyNGMyMTcxMGIzNyIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlBhc3NlbmdlciIsImV4cCI6MTcxODE1ODExNSwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NzE3NC8iLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo1MTczLyJ9.yQuTyXntZ8Aag3ob64d5zPIreXYqy06foX2FJCpwGEI';
   @override
   void initState() {
     super.initState();
-    fetchMessages();
+    _chatController = ChatController(
+      initialMessageList: [],
+      scrollController: ScrollController(),
+      chatUsers: [
+        ChatUser(
+            id: '922a195f-918c-4174-b187-9d11fe552919',
+            name: 'Simform',
+            profilePhoto: Data.profileImage),
+      ],
+    );
+    _initializeChat();
   }
 
-  void fetchMessages() async {
+  Future<void> _initializeChat() async {
     try {
-      final response = await messageService.getMessages();
-      if (response.statusCode == 200) {
-        final List<dynamic> responseData = json.decode(response.body);
-        final List<Message> fetchedMessages = responseData.map((data) {
-          return Message(
-            id: data['id'].toString(),
-            createdAt: DateTime.parse(data['timestamp']),
-            message: data['content'],
-            sendBy: data['senderId'],
-          );
-        }).toList();
-
-        setState(() {
-          messages = fetchedMessages;
-          _chatController.initialMessageList = fetchedMessages;
-        });
-      } else {
-        setState(() {
-          messages = [];
-        });
-      }
+      userId = await fetchCurrentUser(token);
+      receiverId = '1b660aee-0b2a-4c54-8df8-23e82c9f277b';
+      await _loadMessages();
     } catch (e) {
-      setState(() {
-        messages = [];
-      });
+      // Handle errors
+      print('Error initializing chat: $e');
     }
   }
 
-  void sendMessage(String content) async {
-    final newMessage = {
-      "content": content,
-      "timestamp": DateTime.now().toIso8601String(),
-    };
-
-    try {
-      final response = await messageService.sendMessage(newMessage);
-
-      if (response.statusCode == 200) {
-        // Add the message locally to the chat view
-        final id = int.parse(_chatController.initialMessageList.last.id) + 1;
-        final message = Message(
-          id: id.toString(),
-          createdAt: DateTime.now(),
-          message: content,
-          sendBy: currentUser.id,
-        );
-
-        setState(() {
-          _chatController.addMessage(message);
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message sent')),
-        );
+  Future<String?> fetchCurrentUser(String token) async {
+    final url =
+        Uri.parse('http://tomnaia.runasp.net/api/User/get-Current-user');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json != null && json is Map<String, dynamic>) {
+        return json['id'];
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send message')),
-        );
+        throw Exception('Invalid response format');
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send message')),
+    } else {
+      throw Exception('Failed to fetch user: ${response.reasonPhrase}');
+    }
+  }Future<void> _loadMessages() async {
+  if (receiverId == null || userId == null) return;
+
+  final url = Uri.parse('http://tomnaia.runasp.net/api/Message/get?recieverId=$receiverId');
+  final response = await http.get(
+    url,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final List<dynamic> json = jsonDecode(response.body);
+    final List<Message> fetchedMessages = json.map((messageJson) {
+      return Message(
+        id: messageJson['id'].toString(),
+        createdAt: DateTime.parse(messageJson['timestamp']),
+        message: messageJson['content'],
+        sendBy: messageJson['senderId'],
+        messageType: MessageType.text,
       );
+    }).toList();
+
+    setState(() {
+      for (var msg in fetchedMessages) {
+        _chatController.addMessage(msg);
+      }
+    });
+  } else {
+    throw Exception('Failed to load messages: ${response.reasonPhrase} ${response.body}');
+  }
+}
+
+
+
+  Future<void> _sendMessage(String messageContent) async {
+    if (receiverId == null || userId == null) return;
+
+    final url = Uri.parse('http://tomnaia.runasp.net/api/Message/send?recieverId=$receiverId');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'receiverId': receiverId,
+        'content': messageContent,
+        'timestamp': DateTime.now().toIso8601String(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send message: ${response.reasonPhrase} ${response.body}');
+    }else{
+      print('Message sent successfully');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (userId == null || receiverId == null) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       body: ChatView(
         currentUser: currentUser,
         chatController: _chatController,
-        onSendTap: (message, replyMessage, messageType) {
-          sendMessage(message);
+        onSendTap: (message, replyMessage, messageType) async {
           final id = int.parse(Data.messageList.last.id) + 1;
-          _chatController.addMessage(
-            Message(
-              id: id.toString(),
-              createdAt: DateTime.now(),
-              message: message,
-              sendBy: currentUser.id,
-              replyMessage: replyMessage,
-              messageType: messageType,
-            ),
+          final newMessage = Message(
+            id: id.toString(),
+            createdAt: DateTime.now(),
+            message: message,
+            sendBy: currentUser.id,
+            replyMessage: replyMessage,
+            messageType: messageType,
           );
-          Future.delayed(const Duration(milliseconds: 300), () {
-            _chatController.initialMessageList.last.setStatus =
-                MessageStatus.undelivered;
-          });
-          Future.delayed(const Duration(seconds: 1), () {
-            _chatController.initialMessageList.last.setStatus =
-                MessageStatus.read;
-          });
+
+          _chatController.addMessage(newMessage);
+
+          try {
+            await _sendMessage(message);
+            Future.delayed(const Duration(milliseconds: 300), () {
+              _chatController.initialMessageList.last.setStatus =
+                  MessageStatus.undelivered;
+            });
+            Future.delayed(const Duration(seconds: 1), () {
+              _chatController.initialMessageList.last.setStatus =
+                  MessageStatus.read;
+            });
+          } catch (e) {
+            // Handle errors
+            print('Error sending message: $e');
+          }
         },
         featureActiveConfig: const FeatureActiveConfig(
           lastSeenAgoBuilderVisibility: true,

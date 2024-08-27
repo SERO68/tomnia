@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:tomnia/login/signup.dart';
+import 'package:tomnia/login/typeuser.dart';
 
 class Loadscreen2 extends StatefulWidget {
   const Loadscreen2({super.key});
@@ -20,11 +21,11 @@ class _Loadscreen2State extends State<Loadscreen2> {
   }
 
   Future<void> _navigateToNextScreen(BuildContext context) async {
-    await Future.delayed(const Duration(seconds: 2)); // simulate a delay
+    await Future.delayed(const Duration(seconds: 2)); 
     if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) =>  Signup()),
+          MaterialPageRoute(builder: (context) =>  Usertype()),
         );
      
   }

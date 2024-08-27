@@ -6,7 +6,6 @@ import 'dart:io';
 
 // user calss
 
-// cashing shared preferences for user
 class SharedPreferencesHelper {
   static final Future<SharedPreferences> _prefs =
       SharedPreferences.getInstance();
@@ -16,9 +15,9 @@ class SharedPreferencesHelper {
     return prefs.getBool('seen') ?? false;
   }
 
-  static Future<String> getUserType() async {
+  static Future<int> getUserType() async {
     final SharedPreferences prefs = await _prefs;
-    return prefs.getString('userType') ?? 'passenger';
+    return prefs.getInt('userType') ?? 0;
   }
 
   static Future<void> setSeen(bool value) async {
@@ -26,9 +25,9 @@ class SharedPreferencesHelper {
     prefs.setBool('seen', value);
   }
 
-  static Future<void> setUserType(String value) async {
+  static Future<void> setUserType(int value) async {
     final SharedPreferences prefs = await _prefs;
-    prefs.setString('userType', value);
+    prefs.setInt('userType', value);
   }
 }
 

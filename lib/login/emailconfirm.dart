@@ -1,12 +1,41 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:tomnia/driver%20form/firstform.dart';
-import 'package:tomnia/login/signup.dart';
+import 'package:tomnia/Homepassenger/homepassenger.dart';
+import 'package:http/http.dart' as http;
+import 'package:tomnia/model.dart';
 
-import '../classes.dart';
-import 'takepic.dart';
+class Emailconfirm extends StatefulWidget {
+  const Emailconfirm({super.key});
 
-class Usertype extends StatelessWidget {
-  const Usertype({super.key});
+  @override
+  State<Emailconfirm> createState() => _EmailconfirmState();
+}
+
+class _EmailconfirmState extends State<Emailconfirm> {
+  Future<void> fetchCurrentUser(Model model) async {
+    final url =
+        Uri.parse('http://tomnaia.runasp.net/api/User/get-Current-user');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${model.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json != null && json is Map<String, dynamic>) {
+        model.setUserId(json['id']);
+        model.setAccountType(json['accountType']);
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to fetch user: ${response.reasonPhrase}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +58,20 @@ class Usertype extends StatelessWidget {
                           Column(
                             children: [
                               Image.asset(
-                                'images/Startled-rafiki.png',
+                                'images/Email campaign-rafiki.png',
                               ),
                               const Text(
-                                'Are you a Driver or a Passenger?',
+                                'Did you confirm email?',
                                 style: TextStyle(
                                   color: Colors.black,
-                                  fontSize: 25,
+                                  fontSize: 36,
                                   fontFamily: 'Roboto',
                                   fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
+                              ),
+                              SizedBox(
+                                height: constraints.maxHeight * 0.03,
                               ),
                             ],
                           ),
@@ -58,48 +90,21 @@ class Usertype extends StatelessWidget {
                                         constraints.maxWidth * 0.8,
                                         constraints.maxHeight * 0.064))),
                                 onPressed: () {
-                                  SharedPreferencesHelper.setUserType(0);
+                                  final model = Model();
+                                  fetchCurrentUser(model);
+
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => Signup(),
+                                      builder: (context) =>
+                                          const Homepassenger(),
                                     ),
                                   );
                                 },
                                 child: const Text(
-                                  'Passenger',
+                                  'Continue',
                                   style: TextStyle(
                                       color: Colors.white, fontSize: 20),
-                                ),
-                              ),
-                              SizedBox(
-                                height: constraints.maxHeight * 0.02,
-                              ),
-                              ElevatedButton(
-                                style: ButtonStyle(
-                                    shape: MaterialStatePropertyAll(
-                                        RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10))),
-                                    backgroundColor:
-                                        const MaterialStatePropertyAll(
-                                            Color(0xFFF5F5F5)),
-                                    fixedSize: MaterialStatePropertyAll(Size(
-                                        constraints.maxWidth * 0.8,
-                                        constraints.maxHeight * 0.064))),
-                                onPressed: () {
-                                  SharedPreferencesHelper.setUserType(1);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => Firstform(),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  'Driver',
-                                  style: TextStyle(
-                                      color: Colors.black, fontSize: 20),
                                 ),
                               ),
                               SizedBox(

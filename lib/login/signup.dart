@@ -8,11 +8,7 @@ import 'package:animations/animations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-
-// I/flutter (15503): Response body: {"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"ConfirmPassowrd":["The ConfirmPassowrd field is required.","'ConfirmPassowrd' and 'Password' do not match."]},"traceId":"00-d79449d0b2c4b0823b732174dbfaaacd-fdc10070250c246d-00"}
-// I/flutter (15503): Failed to register: Bad Request
-// I/flutter (15503): Response body: {"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"ConfirmPassowrd":["The ConfirmPassowrd field is required.","'ConfirmPassowrd' and 'Password' do not match."]},"traceId":"00-27e4564a483e08085cf8439d2b050997-b59af5413d10031a-00"}
-
+import 'emailconfirm.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
@@ -23,8 +19,9 @@ class Signup extends StatelessWidget {
   final TextEditingController email = TextEditingController();
   final TextEditingController phone = TextEditingController();
   final TextEditingController passwordregister = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();  // Added controller
-  final TextEditingController nationalPhotoController = TextEditingController();   // Added controller
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+  final TextEditingController nationalPhotoController = TextEditingController();
 
   Future<ApiResponse> register(
       String firstName,
@@ -32,10 +29,11 @@ class Signup extends StatelessWidget {
       String email,
       String phoneNumber,
       String password,
-      String confirmPassword, // Added confirmPassword parameter
-      String nationalPhoto,   // Added nationalPhoto parameter
+      String confirmPassword,
+      String nationalPhoto,
       Model model) async {
-    final url = Uri.parse('http://tomnaia.runasp.net/api/Authorization/register');
+    final url =
+        Uri.parse('http://tomnaia.runasp.net/api/Authorization/register');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -45,13 +43,13 @@ class Signup extends StatelessWidget {
         'email': email,
         'phoneNumber': phoneNumber,
         'password': password,
-        'confirmPassowrd': password,  // Corrected spelling
-        'nationalPhoto': nationalPhoto,      // Added field
+        'confirmPassowrd': password,
+        'nationalPhoto': nationalPhoto,
+        "accountType": 0
       }),
     );
 
-    if (response.statusCode == 200) {      print('Response body: ${response.body}');
-
+    if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       if (json != null && json is Map<String, dynamic>) {
         return ApiResponse.fromJson(json);
@@ -59,15 +57,66 @@ class Signup extends StatelessWidget {
         throw Exception('Invalid response format');
       }
     } else {
-      print('Failed to register: ${response.reasonPhrase}');
-      print('Response body: ${response.body}');
       throw Exception('Failed to register: ${response.reasonPhrase}');
+    }
+  }
+
+  Future<ApiResponselogin> login(
+      String email, String password, Model model) async {
+    final url = Uri.parse('http://tomnaia.runasp.net/api/Authorization/login');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json != null && json is Map<String, dynamic>) {
+        ApiResponselogin apiResponse = ApiResponselogin.fromJson(json);
+        if (apiResponse.success && apiResponse.token != null) {
+          model.setToken(apiResponse.token!);
+          print(apiResponse.token!);
+
+          await fetchCurrentUser(model);
+        }
+        return apiResponse;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to login: ${response.reasonPhrase}');
+    }
+  }
+
+  Future<void> fetchCurrentUser(Model model) async {
+    final url =
+        Uri.parse('http://tomnaia.runasp.net/api/User/get-Current-user');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${model.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json != null && json is Map<String, dynamic>) {
+        model.setUserId(json['id']);
+        model.setAccountType(json['accountType']);
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } else {
+      throw Exception('Failed to fetch user: ${response.reasonPhrase}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(  // Ensure Scaffold is present
+    return Scaffold(
+      // Ensure Scaffold is present
       body: DecoratedBox(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -118,9 +167,11 @@ class Signup extends StatelessWidget {
                       child: Form(
                         key: formregister,
                         child: LayoutBuilder(
-                          builder: (BuildContext context, BoxConstraints constraints) {
+                          builder: (BuildContext context,
+                              BoxConstraints constraints) {
                             return ListView(
-                              padding: const EdgeInsets.only(left: 20, right: 20, top: 10),
+                              padding: const EdgeInsets.only(
+                                  left: 20, right: 20, top: 10),
                               children: [
                                 const Text(
                                   'Sign Up',
@@ -140,7 +191,8 @@ class Signup extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        SizedBox(width: constraints.maxWidth * 0.01),
+                                        SizedBox(
+                                            width: constraints.maxWidth * 0.01),
                                         const Text(
                                           'Name',
                                           style: TextStyle(
@@ -152,24 +204,29 @@ class Signup extends StatelessWidget {
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       mainAxisSize: MainAxisSize.max,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextFormField(
                                             controller: firstname,
                                             decoration: InputDecoration(
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: 'First Name',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Enter your first name';
                                               }
                                               return null;
@@ -182,15 +239,18 @@ class Signup extends StatelessWidget {
                                             controller: lastname,
                                             decoration: InputDecoration(
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: 'Last Name',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Enter your last name';
                                               }
                                               return null;
@@ -209,7 +269,8 @@ class Signup extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        SizedBox(width: constraints.maxWidth * 0.01),
+                                        SizedBox(
+                                            width: constraints.maxWidth * 0.01),
                                         const Text(
                                           'Email',
                                           style: TextStyle(
@@ -221,27 +282,35 @@ class Signup extends StatelessWidget {
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       mainAxisSize: MainAxisSize.max,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextFormField(
                                             controller: email,
                                             decoration: InputDecoration(
-                                              prefixIcon: const Icon(Icons.email),
+                                              prefixIcon:
+                                                  const Icon(Icons.email),
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: 'Example@gmail.com',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Enter your Email';
-                                              } else if (!RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$').hasMatch(value)) {
+                                              } else if (!RegExp(
+                                                      r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$')
+                                                  .hasMatch(value)) {
                                                 return 'Enter a valid Email';
                                               }
                                               return null;
@@ -253,14 +322,15 @@ class Signup extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 20),
-                                
+
                                 // Phone input
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       children: [
-                                        SizedBox(width: constraints.maxWidth * 0.01),
+                                        SizedBox(
+                                            width: constraints.maxWidth * 0.01),
                                         const Text(
                                           'Phone',
                                           style: TextStyle(
@@ -272,28 +342,36 @@ class Signup extends StatelessWidget {
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       mainAxisSize: MainAxisSize.max,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextFormField(
                                             keyboardType: TextInputType.phone,
                                             controller: phone,
                                             decoration: InputDecoration(
-                                              prefixIcon: const Icon(Icons.phone),
+                                              prefixIcon:
+                                                  const Icon(Icons.phone),
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: '123 456 7890',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Enter your phone number';
-                                              } else if (!RegExp(r'^01[0-2|5]{1}[0-9]{8}$').hasMatch(value)) {
+                                              } else if (!RegExp(
+                                                      r'^01[0-2|5]{1}[0-9]{8}$')
+                                                  .hasMatch(value)) {
                                                 return 'Enter a valid phone number';
                                               }
                                               return null;
@@ -312,7 +390,8 @@ class Signup extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        SizedBox(width: constraints.maxWidth * 0.01),
+                                        SizedBox(
+                                            width: constraints.maxWidth * 0.01),
                                         const Text(
                                           'Password',
                                           style: TextStyle(
@@ -324,19 +403,24 @@ class Signup extends StatelessWidget {
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       mainAxisSize: MainAxisSize.max,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextFormField(
                                             controller: passwordregister,
                                             obscureText: model.obscure!,
                                             decoration: InputDecoration(
-                                              prefixIcon: const Icon(Icons.lock),
+                                              prefixIcon:
+                                                  const Icon(Icons.lock),
                                               suffixIcon: IconButton(
                                                 icon: Icon(
-                                                  model.obscure! ? Icons.visibility : Icons.visibility_off,
+                                                  model.obscure!
+                                                      ? Icons.visibility
+                                                      : Icons.visibility_off,
                                                 ),
                                                 onPressed: () {
                                                   model.changeobscure();
@@ -344,20 +428,26 @@ class Signup extends StatelessWidget {
                                               ),
                                               errorMaxLines: 2,
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: '********',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Enter your Password';
                                               }
-                                              if (!value.contains(RegExp(r'[A-Z]')) ||
-                                                  !value.contains(RegExp(r'[0-9]')) ||
-                                                  !value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+                                              if (!value.contains(
+                                                      RegExp(r'[A-Z]')) ||
+                                                  !value.contains(
+                                                      RegExp(r'[0-9]')) ||
+                                                  !value.contains(RegExp(
+                                                      r'[!@#$%^&*(),.?":{}|<>]'))) {
                                                 return 'Password must contain one upper case letter, one special symbol, one number at least';
                                               }
                                               if (value.length < 8) {
@@ -379,7 +469,8 @@ class Signup extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        SizedBox(width: constraints.maxWidth * 0.01),
+                                        SizedBox(
+                                            width: constraints.maxWidth * 0.01),
                                         const Text(
                                           'Confirm Password',
                                           style: TextStyle(
@@ -391,19 +482,25 @@ class Signup extends StatelessWidget {
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       mainAxisSize: MainAxisSize.max,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextFormField(
-                                            controller: confirmPasswordController,
+                                            controller:
+                                                confirmPasswordController,
                                             obscureText: model.obscure!,
                                             decoration: InputDecoration(
-                                              prefixIcon: const Icon(Icons.lock),
+                                              prefixIcon:
+                                                  const Icon(Icons.lock),
                                               suffixIcon: IconButton(
                                                 icon: Icon(
-                                                  model.obscure! ? Icons.visibility : Icons.visibility_off,
+                                                  model.obscure!
+                                                      ? Icons.visibility
+                                                      : Icons.visibility_off,
                                                 ),
                                                 onPressed: () {
                                                   model.changeobscure();
@@ -411,18 +508,22 @@ class Signup extends StatelessWidget {
                                               ),
                                               errorMaxLines: 2,
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: '********',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Confirm your Password';
                                               }
-                                              if (value != passwordregister.text) {
+                                              if (value !=
+                                                  passwordregister.text) {
                                                 return 'Passwords do not match';
                                               }
                                               return null;
@@ -441,7 +542,8 @@ class Signup extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        SizedBox(width: constraints.maxWidth * 0.01),
+                                        SizedBox(
+                                            width: constraints.maxWidth * 0.01),
                                         const Text(
                                           'National Photo',
                                           style: TextStyle(
@@ -453,25 +555,31 @@ class Signup extends StatelessWidget {
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       mainAxisSize: MainAxisSize.max,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child: TextFormField(
                                             controller: nationalPhotoController,
                                             decoration: InputDecoration(
-                                              prefixIcon: const Icon(Icons.photo),
+                                              prefixIcon:
+                                                  const Icon(Icons.photo),
                                               filled: true,
-                                              fillColor: const Color.fromRGBO(237, 237, 237, 1),
+                                              fillColor: const Color.fromRGBO(
+                                                  237, 237, 237, 1),
                                               border: OutlineInputBorder(
                                                 borderSide: BorderSide.none,
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               hintText: 'National Photo URL',
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Enter the National Photo URL';
                                               }
                                               return null;
@@ -486,16 +594,19 @@ class Signup extends StatelessWidget {
 
                                 // Sign up button and navigation to another screen
                                 Column(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
                                     ElevatedButton(
                                       style: ButtonStyle(
                                         shape: MaterialStateProperty.all(
                                           RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                         ),
-                                        backgroundColor: MaterialStateProperty.all(
+                                        backgroundColor:
+                                            MaterialStateProperty.all(
                                           const Color.fromRGBO(4, 56, 96, 1),
                                         ),
                                         fixedSize: MaterialStateProperty.all(
@@ -506,50 +617,65 @@ class Signup extends StatelessWidget {
                                         ),
                                       ),
                                       onPressed: () async {
-                                        if (formregister.currentState!.validate()) {
+                                        if (formregister.currentState!
+                                            .validate()) {
                                           try {
-                                            ApiResponse response = await register(
+                                            ApiResponse response =
+                                                await register(
                                               firstname.text,
                                               lastname.text,
                                               email.text,
                                               phone.text,
                                               passwordregister.text,
-                                              confirmPasswordController.text,  // Pass confirm password
-                                              nationalPhotoController.text,    // Pass national photo URL
+                                              confirmPasswordController.text,
+                                              nationalPhotoController.text,
                                               model,
                                             );
-                                            if (response.success && response.emailConfirmationRequired) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(response.message ?? 'Please confirm your email to continue.'),
-                                                ),
-                                              );
-                                            } else if (response.success) {
+                                            if (response.success) {
+                                              login(email.text,
+                                                  passwordregister.text, model);
+
                                               Navigator.of(context).push(
                                                 PageRouteBuilder(
-                                                  pageBuilder: (context, animation, secondaryAnimation) => const Gpslocation(),
-                                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                                  pageBuilder: (context,
+                                                          animation,
+                                                          secondaryAnimation) =>
+                                                      const Emailconfirm(),
+                                                  transitionsBuilder: (context,
+                                                      animation,
+                                                      secondaryAnimation,
+                                                      child) {
                                                     return SharedAxisTransition(
                                                       animation: animation,
-                                                      secondaryAnimation: secondaryAnimation,
-                                                      transitionType: SharedAxisTransitionType.horizontal,
+                                                      secondaryAnimation:
+                                                          secondaryAnimation,
+                                                      transitionType:
+                                                          SharedAxisTransitionType
+                                                              .horizontal,
                                                       child: child,
                                                     );
                                                   },
-                                                  transitionDuration: const Duration(milliseconds: 500),
+                                                  transitionDuration:
+                                                      const Duration(
+                                                          milliseconds: 500),
                                                 ),
                                               );
                                             } else {
-                                              ScaffoldMessenger.of(context).showSnackBar(
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
                                                 SnackBar(
-                                                  content: Text(response.message ?? 'Registration failed.'),
+                                                  content: Text(response
+                                                          .message ??
+                                                      'Registration failed.'),
                                                 ),
                                               );
                                             }
                                           } catch (e) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
                                               SnackBar(
-                                                content: Text('Registration failed: $e'),
+                                                content: Text(
+                                                    'Registration failed: $e'),
                                               ),
                                             );
                                           }
@@ -557,18 +683,23 @@ class Signup extends StatelessWidget {
                                       },
                                       child: const Text(
                                         'Sign up',
-                                        style: TextStyle(color: Colors.white, fontSize: 20),
+                                        style: TextStyle(
+                                            color: Colors.white, fontSize: 20),
                                         textAlign: TextAlign.center,
                                       ),
                                     ),
-                                    SizedBox(height: constraints.maxHeight * 0.015),
+                                    SizedBox(
+                                        height: constraints.maxHeight * 0.015),
                                     TextButton(
                                       onPressed: () {
-                                        Navigator.of(context).push(_createRoute());
+                                        Navigator.of(context)
+                                            .push(_createRoute());
                                       },
                                       child: const Text(
                                         'Already have an account?',
-                                        style: TextStyle(color: Color.fromRGBO(128, 128, 128, 1)),
+                                        style: TextStyle(
+                                            color: Color.fromRGBO(
+                                                128, 128, 128, 1)),
                                       ),
                                     ),
                                   ],

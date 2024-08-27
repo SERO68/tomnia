@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import 'package:tomnia/Homepassenger/homepassenger.dart';
-import 'package:tomnia/model.dart';
 
 class ProfilePictureScreen extends StatefulWidget {
   const ProfilePictureScreen({super.key});
@@ -17,26 +16,29 @@ class ProfilePictureScreen extends StatefulWidget {
 class _ProfilePictureScreenState extends State<ProfilePictureScreen> {
   File? _image;
 
-Future<void> updateProfilePicture(Model model, File imageFile) async {
-  final url = Uri.parse('http://tomnaia.runasp.net/api/User/update-picture');
+  final String token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJzZXJvYWxleEB5YWhvby5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjFiNjYwYWVlLTBiMmEtNGM1NC04ZGY4LTIzZTgyYzlmMjc3YiIsImp0aSI6IjEzYTY2ODBiLWNiNDgtNGY0Ni05ZmY3LTI0OWFiYmRjMTcwMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlBhc3NlbmdlciIsImV4cCI6MTcxODE1NjMzMSwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NzE3NC8iLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo1MTczLyJ9.7a3uBlTsTPcnK3Td_D_N8IRaTpm45X8encAbIPwEMvI';
+
+  Future<void> updateProfilePicture(String token, File imageFile) async {
+    final url = Uri.parse('http://tomnaia.runasp.net/api/User/update-picture');
+    final request = http.MultipartRequest('PUT', url)
+      ..headers['Authorization'] = 'Bearer $token'  // Corrected header
+      ..files.add(await http.MultipartFile.fromPath(
+        'file',
+        imageFile.path,
+        contentType: MediaType('image', 'jpeg'), // Adjust based on your image type
+      ));
   
-  final request = http.MultipartRequest('PUT', url)
-    ..headers['Authorization'] = 'Bearer ${model.token}'
-    ..files.add(await http.MultipartFile.fromPath(
-      'picture', 
-      imageFile.path,
-      contentType: MediaType('image', 'jpeg'), // Adjust based on your image type
-    ));
+    final response = await request.send();
   
-  final response = await request.send();
-  
-  if (response.statusCode == 200) {
-    print('Profile picture updated successfully.');
-  } else {
-    final responseBody = await response.stream.bytesToString();
-    throw Exception('Failed to update profile picture: ${response.reasonPhrase}, $responseBody');
+    if (response.statusCode == 200) {
+      print('Profile picture updated successfully.');
+    } else {
+      final responseBody = await response.stream.bytesToString();    
+      print('${response.reasonPhrase}, $responseBody');
+      throw Exception('Failed to update profile picture: ${response.reasonPhrase}, $responseBody');
+    }
   }
-}
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -59,8 +61,7 @@ Future<void> updateProfilePicture(Model model, File imageFile) async {
     }
 
     try {
-      // Assuming you have a Model instance named `model` available in this context.
-      await updateProfilePicture(Model(), _image!);
+      await updateProfilePicture(token, _image!);
       Navigator.push(
         context,
         MaterialPageRoute(

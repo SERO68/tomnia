@@ -1,6 +1,6 @@
-import 'dart:collection';
-import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:tomnia/database.dart';
 import 'package:uuid/uuid.dart';
 import 'package:chatview/chatview.dart';
 import 'package:latlong2/latlong.dart';
@@ -9,7 +9,72 @@ import 'package:http/http.dart' as http;
 import 'package:geocoding/geocoding.dart';
 
 class Model extends ChangeNotifier {
-  String? _token;
+  // User-related properties and methods
+  User? _currentUser;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  User? get currentUser1 => _currentUser;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  Future<void> fetchCurrentUser(String token) async {
+    final url = Uri.parse('http://tomnaia.runasp.net/api/User/get-Current-user');
+
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json != null && json is Map<String, dynamic>) {
+          _currentUser = User.fromJson(json);
+        } else {
+          _errorMessage = 'Invalid response format';
+        }
+      } else {
+        _errorMessage = 'Failed to fetch user: ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to fetch user: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Additional properties and methods for other functionalities
+  bool driverFormCompleted = false;
+  bool carFormCompleted = false;
+  int? _accountType;
+  int? get accountType => _accountType;
+
+  void setDriverFormCompleted(bool completed) {
+    driverFormCompleted = completed;
+    notifyListeners();
+  }
+
+  void setCarFormCompleted(bool completed) {
+    carFormCompleted = completed;
+    notifyListeners();
+  }
+
+  void setAccountType(int accountType) {
+    _accountType = accountType;
+    notifyListeners();
+  }
+
+  bool get isSubmitEnabled => driverFormCompleted && carFormCompleted;
+
+  String? _token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJzZXJvYWxleEB5YWhvby5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjFiNjYwYWVlLTBiMmEtNGM1NC04ZGY4LTIzZTgyYzlmMjc3YiIsImp0aSI6IjEzYTY2ODBiLWNiNDgtNGY0Ni05ZmY3LTI0OWFiYmRjMTcwMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlBhc3NlbmdlciIsImV4cCI6MTcxODE1NjMzMSwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NzE3NC8iLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo1MTczLyJ9.7a3uBlTsTPcnK3Td_D_N8IRaTpm45X8encAbIPwEMvI';
   String? _userId;
 
   String? get token => _token;
@@ -126,6 +191,14 @@ class Model extends ChangeNotifier {
 
     notifyListeners();
   }
+    int _currentIndex = 0;
+  
+  int get currentIndex => _currentIndex;
+
+  void setIndex(int index) {
+    _currentIndex = index;
+    notifyListeners();
+  }
 
   Future<void> fetchRoute(String apiKey) async {
     if (_startLatLng != null && _endLatLng != null) {
@@ -170,74 +243,20 @@ class Model extends ChangeNotifier {
   }
 
   Future<String> _getAddressFromLatLng(LatLng latLng) async {
-    try {
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
-      if (placemarks.isEmpty) {
-        log("Placemark list is empty.");
-        return "No Address";
-      }
+    final placemarks =
+        await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
+    final placemark = placemarks.first;
+    return '${placemark.street}, ${placemark.locality}, ${placemark.administrativeArea}, ${placemark.country}';
+  }
 
-      var combinedAddress = "";
-      if (placemarks.length > 1) {
-        Placemark secondPlacemark = placemarks[1];
-        var street = secondPlacemark.street!;
-        combinedAddress =
-            "$street ${secondPlacemark.subThoroughfare} ${secondPlacemark.thoroughfare}";
-      }
-      for (var placemark in placemarks) {
-        if (placemark.street != null &&
-            placemark.subThoroughfare != null &&
-            placemark.thoroughfare != null) {
-          _city = placemark.locality!;
-          var street = placemark.street!;
-          notifyListeners();
-          street =
-              "$street ${placemark.subThoroughfare} ${placemark.thoroughfare}";
-          combinedAddress = '$street $combinedAddress';
-
-          // Clean up the street name
-          var cleanedStreet = cleanStreetName(combinedAddress);
-
-          return cleanedStreet;
-        } else {
-          log("Placemark street is null for placemark: $placemark");
-        }
-      }
-      log("No valid street found in placemarks.");
-      return "No Address";
-    } catch (e, stacktrace) {
-      log("Error getting placemarks: $e");
-      log("Stacktrace: $stacktrace");
-      return "No Address";
+  void updateLocation(double lat, double long) async {
+    _locataion = LatLng(lat, long);
+    final placemarks = await placemarkFromCoordinates(lat, long);
+    if (placemarks.isNotEmpty) {
+      final place = placemarks.first;
+      _city = place.locality;
     }
-  }
-
-  String cleanStreetName(String street) {
-    // Remove numbers and English letters
-    street = street.replaceAll(RegExp(r'[0-9A-Za-z]+'), '');
-
-    // Remove special characters like +, commas, and extra spaces
-    street = street
-        .replaceAll(RegExp(r'[,+]+'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    // Split the street into parts
-    var parts = street.split(' ');
-
-    // Remove duplicate parts
-    var uniqueParts = LinkedHashSet<String>.from(parts).toList();
-
-    // Join the parts back into a single string
-    return uniqueParts.join(' ');
-  }
-int _currentIndex = 0;
-
-  int get currentIndex => _currentIndex;
-
-  void setIndex(int index) {
-    _currentIndex = index;
     notifyListeners();
   }
 }
+

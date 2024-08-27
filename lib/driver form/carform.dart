@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:tomnia/Homepassenger/homepassenger.dart';
+import 'package:provider/provider.dart';
+import 'package:tomnia/model.dart';
 
 class Carform extends StatefulWidget {
   const Carform({super.key});
@@ -41,8 +42,12 @@ class _CarformState extends State<Carform> {
     });
   }
 
+  final String token =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJzZXJvYWxleEB5YWhvby5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjFiNjYwYWVlLTBiMmEtNGM1NC04ZGY4LTIzZTgyYzlmMjc3YiIsImp0aSI6ImViNTZkNjc4LTA0ZGItNDUyYS1iYjhkLTYyNGMyMTcxMGIzNyIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlBhc3NlbmdlciIsImV4cCI6MTcxODE1ODExNSwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NzE3NC8iLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo1MTczLyJ9.yQuTyXntZ8Aag3ob64d5zPIreXYqy06foX2FJCpwGEI';
+
   Future<void> createVehicle() async {
-    final url = Uri.parse('http://tomnaia.runasp.net/api/Vehicle/CreateVehicle');
+    final url =
+        Uri.parse('http://tomnaia.runasp.net/api/Vehicle/CreateVehicle');
 
     String carImageBase64 = '';
     String licensePhotoBase64 = '';
@@ -57,7 +62,10 @@ class _CarformState extends State<Carform> {
 
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
       body: jsonEncode({
         'capacity': int.parse(carcapacity.text),
         'model': carmodel.text,
@@ -90,12 +98,8 @@ class _CarformState extends State<Carform> {
 
       try {
         await createVehicle();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const Homepassenger(),
-          ),
-        );
+        Provider.of<Model>(context, listen: false).setCarFormCompleted(true);
+        Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -153,8 +157,7 @@ class _CarformState extends State<Carform> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          _buildPhotoUploadSection(
-                              'Add Your Car Photo', 'Car'),
+                          _buildPhotoUploadSection('Add Your Car Photo', 'Car'),
                           const SizedBox(height: 10),
                           _buildTextField(
                             controller: yearproduction,

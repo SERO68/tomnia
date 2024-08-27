@@ -26,8 +26,8 @@ class _LoadscreenState extends State<Loadscreen> {
     await Future.delayed(const Duration(seconds: 4)); 
     if (!mounted) return;
     if (hasSeenOnboarding) {
-      String userType = await SharedPreferencesHelper.getUserType();
-      if (userType == 'driver') {
+      int userType = await SharedPreferencesHelper.getUserType();
+      if (userType == 1) {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) =>  Homedriver()),

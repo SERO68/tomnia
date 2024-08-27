@@ -2,10 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:tomnia/login/signup.dart';
 import 'Homedriver/home.dart';
 import 'classes.dart';
-import 'driver form/carform.dart';
 import 'model.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 
@@ -28,12 +26,11 @@ void main() async {
     HttpOverrides.global = MyHttpOverrides();
 
   runApp(
-    DevicePreview(
-      builder: (context) => ChangeNotifierProvider(
+  ChangeNotifierProvider(
         create: (context) => Model(),
         child: const MyApp(),
       ),
-    ),
+    
   );
 }
 
@@ -48,6 +45,6 @@ class MyApp extends StatelessWidget {
               seedColor: const Color.fromARGB(255, 5, 3, 49)),
           useMaterial3: true,
         ),
-        home:  Carform());
+        home:  Home());
   }
 }

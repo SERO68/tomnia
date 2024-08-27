@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tomnia/model.dart';
 
 import 'Homedriver/profiledriver.dart';
 
@@ -7,6 +8,8 @@ class Settings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+        final model = Model().currentUser1;
+
     return Scaffold(backgroundColor:  Colors.grey[200],
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -23,10 +26,9 @@ class Settings extends StatelessWidget {
                 color: Color.fromARGB(255, 38, 37, 136),
               ),
             ),
-            CircleAvatar(backgroundImage:    const AssetImage(
-              'images/serologo.png',
-              
-            ) ,
+            CircleAvatar(backgroundImage:    NetworkImage(
+                      'http://tomnaia.runasp.net${model!.profilePicture}',
+                    ),
               child: GestureDetector(
                   onTap: () {
                     Navigator.push(

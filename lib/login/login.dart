@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tomnia/classes.dart';
 import 'package:tomnia/database.dart';
 import 'package:tomnia/forgetpassword/forgetpassword.dart';
 import 'package:tomnia/login/signup.dart';
 import 'package:tomnia/model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import '../Homedriver/homedriver.dart';
+import '../Homepassenger/homepassenger.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -15,58 +19,58 @@ class Login extends StatelessWidget {
     final GlobalKey<FormState> formregister = GlobalKey();
     final TextEditingController emaillogin = TextEditingController();
     final TextEditingController passwordlogin = TextEditingController();
+    Future<void> fetchCurrentUser(Model model) async {
+      final url =
+          Uri.parse('http://tomnaia.runasp.net/api/User/get-Current-user');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${model.token}',
+        },
+      );
 
-Future<String?> fetchCurrentUser(Model model) async {
-  final url = Uri.parse('http://tomnaia.runasp.net/api/User/get-Current-user');
-  final response = await http.get(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${model.token}',
-    },
-  );
-  if (response.statusCode == 200) {
-    final json = jsonDecode(response.body);
-    if (json != null && json is Map<String, dynamic>) {
-      return json['id']; 
-    } else {
-      throw Exception('Invalid response format');
-    }
-  } else {
-    throw Exception('Failed to fetch user: ${response.reasonPhrase}');
-  }
-}
-
-Future<ApiResponselogin> login(String email, String password, Model model) async {
-  final url = Uri.parse('http://tomnaia.runasp.net/api/Authorization/login');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'email': email, 'password': password}),
-  );
-
-
-  if (response.statusCode == 200) {
-    final json = jsonDecode(response.body);
-    if (json != null && json is Map<String, dynamic>) {
-      ApiResponselogin apiResponse = ApiResponselogin.fromJson(json);
-      if (apiResponse.success && apiResponse.token != null) {
-        model.setToken(apiResponse.token!);
-
-       
-        String? userId = await fetchCurrentUser(model);
-        if (userId != null) {
-          model.setUserId(userId);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json != null && json is Map<String, dynamic>) {
+          model.setUserId(json['id']);
+          model.setAccountType(json['accountType']);
+        } else {
+          throw Exception('Invalid response format');
         }
+      } else {
+        throw Exception('Failed to fetch user: ${response.reasonPhrase}');
       }
-      return apiResponse;
-    } else {
-      throw Exception('Invalid response format');
     }
-  } else {
-    throw Exception('Failed to login: ${response.reasonPhrase}');
-  }
-}
+
+    Future<ApiResponselogin> login(
+        String email, String password, Model model) async {
+      final url =
+          Uri.parse('http://tomnaia.runasp.net/api/Authorization/login');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json != null && json is Map<String, dynamic>) {
+          ApiResponselogin apiResponse = ApiResponselogin.fromJson(json);
+          if (apiResponse.success && apiResponse.token != null) {
+            model.setToken(apiResponse.token!);
+            print(apiResponse.token!);
+
+            await fetchCurrentUser(model);
+          }
+          return apiResponse;
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to login: ${response.reasonPhrase}');
+      }
+    }
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -343,21 +347,59 @@ Future<ApiResponselogin> login(String email, String password, Model model) async
                                             constraints.maxHeight * 0.064),
                                       ),
                                     ),
-                                 onPressed: () async {
-  if (formregister.currentState!.validate()) {
-    try {
-      ApiResponselogin response = await login(emaillogin.text, passwordlogin.text, model);
-      if (response.success) {
-        // Navigate to the next screen or show a success message
-        // Display or use the user ID as needed
-      } else {
-        // Show error message
-      }
-    } catch (e) {
-      // Handle error
-    }
-  }
-},
+                                    onPressed: () async {
+                                      if (formregister.currentState!
+                                          .validate()) {
+                                        try {
+                                          ApiResponselogin response =
+                                              await login(
+                                            emaillogin.text,
+                                            passwordlogin.text,
+                                            model,
+                                          );
+                                          if (response.success) {
+                                            if (model.accountType == 0) {
+                                              SharedPreferencesHelper
+                                                  .setUserType(0);
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        Homepassenger()),
+                                              );
+                                            } else if (model.accountType == 1) {
+                                              SharedPreferencesHelper
+                                                  .setUserType(1);
+
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        Homedriver()),
+                                              );
+                                            } else {
+                                              print('error');
+                                            }
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      'Login failed: ${response.errorType}')),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          print(e);
+                                          // Handle error
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    'An error occurred: $e')),
+                                          );
+                                        }
+                                      }
+                                    },
                                     child: const Text(
                                       'Login',
                                       style: TextStyle(
