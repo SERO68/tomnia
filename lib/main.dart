@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:device_preview/device_preview.dart';
 import 'Homedriver/home.dart';
 import 'classes.dart';
+import 'loadscreen.dart';
 import 'model.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 
@@ -45,6 +46,6 @@ class MyApp extends StatelessWidget {
               seedColor: const Color.fromARGB(255, 5, 3, 49)),
           useMaterial3: true,
         ),
-        home:  Home());
+        home:  Loadscreen());
   }
 }

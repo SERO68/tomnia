@@ -46,7 +46,7 @@ class Login extends StatelessWidget {
     Future<ApiResponselogin> login(
         String email, String password, Model model) async {
       final url =
-          Uri.parse('http://tomnaia.runasp.net/api/Authorization/login');
+          Uri.parse('http://tomnaia.runasp.net/api/Authorization/login'); 
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

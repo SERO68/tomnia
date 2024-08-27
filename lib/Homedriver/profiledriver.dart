@@ -119,7 +119,7 @@ class _ProfiledriverState extends State<Profiledriver> {
             } else if (!snapshot.hasData || snapshot.data == null) {
               return const Center(child: Text('User not found'));
             } else {
-final model = Model().currentUser1;
+    final model = Provider.of<Model>(context).currentUser;
               return Column(
                 children: [
                   Container(

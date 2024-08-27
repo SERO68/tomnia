@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tomnia/Homedriver/addpath.dart';
 import 'package:tomnia/Homedriver/profiledriver.dart';
-import 'package:tomnia/model.dart'; 
-import '../database.dart';
+import 'package:tomnia/model.dart';
+import 'package:tomnia/database.dart';
 import 'package:http/http.dart' as http;
 
 class Homedriver extends StatefulWidget {
@@ -16,35 +16,36 @@ class Homedriver extends StatefulWidget {
 class _HomedriverState extends State<Homedriver> {
   List<Ride> rides = [];
 
-Future<List<Ride>> fetchDriverRide(String driverId, String token) async {
-  final url = Uri.parse('http://tomnaia.runasp.net/api/Rides/driver/$driverId');
-  final response = await http.get(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-  );
+  Future<List<Ride>> fetchDriverRide(String driverId, String token) async {
+    final url = Uri.parse('http://tomnaia.runasp.net/api/Rides/driver/$driverId');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-  if (response.statusCode == 200) {
-    final List<dynamic> jsonList = jsonDecode(response.body);
-    List<Ride> rides = jsonList.map((json) => Ride.fromJson(json)).toList();
-    return rides;
-  } else {
-    throw Exception('Failed to load rides for driver');
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      List<Ride> rides = jsonList.map((json) => Ride.fromJson(json)).toList();
+      return rides;
+    } else {
+      throw Exception('Failed to load rides for driver');
+    }
   }
-}
 
   @override
   void initState() {
     super.initState();
     fetchDriverRides();
   }
-Future<void> fetchDriverRides() async {
+
+  Future<void> fetchDriverRides() async {
     try {
       final model = Provider.of<Model>(context, listen: false);
-      String driverId = model.userId!; 
-      
+      String driverId = model.userId!;
+
       List<Ride> fetchedRides = await fetchDriverRide(driverId, model.token!);
 
       setState(() {
@@ -57,7 +58,7 @@ Future<void> fetchDriverRides() async {
 
   @override
   Widget build(BuildContext context) {
-    final model = Model().currentUser1;
+    final model = Provider.of<Model>(context).currentUser;
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
@@ -77,8 +78,8 @@ Future<void> fetchDriverRides() async {
             ),
             CircleAvatar(
               backgroundImage: NetworkImage(
-                      'http://tomnaia.runasp.net${model!.profilePicture}',
-                    ),
+                'http://tomnaia.runasp.net${model?.profilePicture ?? ''}',
+              ),
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(

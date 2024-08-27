@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
 import 'package:tomnia/model.dart';
 
 import 'profiledriver.dart';
-
 class Earnings extends StatelessWidget {
-  Earnings({super.key});
+  Earnings({Key? key}) : super(key: key);
   final List<double> earnings = [100.0, 120.0, 80.0, 91.12, 110.0, 150.0];
 
   @override
   Widget build(BuildContext context) {
-        final model = Model().currentUser1;
+    final model = Provider.of<Model>(context).currentUser;
 
-    return Scaffold(backgroundColor:  Colors.grey[200],
-     appBar: AppBar(
+    return Scaffold(
+      backgroundColor: Colors.grey[200],
+      appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        
-        title:  Row(
+        title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
@@ -28,20 +28,21 @@ class Earnings extends StatelessWidget {
                 color: Color.fromARGB(255, 38, 37, 136),
               ),
             ),
-            CircleAvatar(backgroundImage:  NetworkImage(
-                      'http://tomnaia.runasp.net${model!.profilePicture}',
-                    ),
+            CircleAvatar(
+              backgroundImage: NetworkImage(
+                'http://tomnaia.runasp.net${model?.profilePicture ?? ''}',
+              ),
               child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => Profiledriver(),
-                      ),
-                    );
-                  },
-                ),)
-          
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Profiledriver(),
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -50,7 +51,6 @@ class Earnings extends StatelessWidget {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-             
               const WalletBalanceSection(),
               const SizedBox(height: 20),
               EarningsChartSection(earnings: earnings),

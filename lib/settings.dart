@@ -8,7 +8,7 @@ class Settings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        final model = Model().currentUser1;
+        final model = Model().currentUser;
 
     return Scaffold(backgroundColor:  Colors.grey[200],
       appBar: AppBar(

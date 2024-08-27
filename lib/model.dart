@@ -7,14 +7,13 @@ import 'package:latlong2/latlong.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geocoding/geocoding.dart';
-
 class Model extends ChangeNotifier {
   // User-related properties and methods
   User? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
 
-  User? get currentUser1 => _currentUser;
+  User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -148,7 +147,6 @@ class Model extends ChangeNotifier {
     });
   }
 
-  ChatUser get currentUser => _user;
 
   LatLng? _locataion;
   LatLng? _startLatLng;
@@ -191,8 +189,9 @@ class Model extends ChangeNotifier {
 
     notifyListeners();
   }
-    int _currentIndex = 0;
-  
+
+  int _currentIndex = 0;
+
   int get currentIndex => _currentIndex;
 
   void setIndex(int index) {
@@ -260,3 +259,28 @@ class Model extends ChangeNotifier {
   }
 }
 
+
+
+class User {
+  final String? profilePicture;
+  final String? firstName;
+  final String? lastName;
+
+  User({this.profilePicture, this.firstName, this.lastName});
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      profilePicture: json['profilePicture'],
+      firstName: json['firstName'],
+      lastName: json['lastName'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'profilePicture': profilePicture,
+      'firstName': firstName,
+      'lastName': lastName,
+    };
+  }
+}
